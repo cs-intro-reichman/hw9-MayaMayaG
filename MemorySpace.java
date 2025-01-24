@@ -58,8 +58,31 @@ public class MemorySpace {
 	 * @return the base address of the allocated block, or -1 if unable to allocate
 	 */
 	public int malloc(int length) {		
-		//// Replace the following statement with your code
-		return -1;
+		Node currentNode = freeList.getFirst();
+        while (currentNode != null) 
+		{
+            MemoryBlock freeBlock = currentNode.block; 
+            if (freeBlock.length >= length) 
+			{  
+                int baseAddress = freeBlock.baseAddress; 
+                
+                if (freeBlock.length > length) 
+				{
+                    freeBlock.length -= length;
+                    freeBlock.baseAddress += length;
+                } 
+				else 
+				{
+                    freeList.remove(currentNode);
+                }
+
+                MemoryBlock allocatedBlock = new MemoryBlock(baseAddress, length);
+                allocatedList.addLast(allocatedBlock);
+                return baseAddress; 
+            }
+            currentNode = currentNode.next;
+        }
+        return -1;  
 	}
 
 	/**
@@ -71,7 +94,18 @@ public class MemorySpace {
 	 *            the starting address of the block to freeList
 	 */
 	public void free(int address) {
-		//// Write your code here
+		Node currentNode = allocatedList.getFirst();
+        while (currentNode != null) 
+		{
+            if (currentNode.block.baseAddress == address) 
+			{
+                allocatedList.remove(currentNode);
+                freeList.addLast(currentNode.block);
+                return; 
+            }
+            currentNode = currentNode.next;
+        }
+        throw new IllegalArgumentException("Block with the given address does not exist.");
 	}
 	
 	/**
@@ -88,6 +122,30 @@ public class MemorySpace {
 	 * In this implementation Malloc does not call defrag.
 	 */
 	public void defrag() {
-		//// Write your code here
+		LinkedList defraggedList = new LinkedList();  
+		Node currentNode = freeList.getFirst();  
+		int lastBaseAddress = -1;  
+		
+		while (currentNode != null) 
+		{
+			MemoryBlock block = currentNode.block;
+			if (lastBaseAddress == -1 || lastBaseAddress + block.length != block.baseAddress) 
+			{
+				defraggedList.addLast(block);
+			} 
+			else 
+			{
+				Node lastNode = defraggedList.getFirst(); 
+				while (lastNode != null && lastNode.next != null) 
+				{  
+					lastNode = lastNode.next;
+				}
+				MemoryBlock lastBlock = lastNode.block;
+				lastBlock.length += block.length;
+			}
+			lastBaseAddress = block.baseAddress + block.length;
+			currentNode = currentNode.next;
+		}
+		freeList = defraggedList;
 	}
 }
