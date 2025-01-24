@@ -58,28 +58,48 @@ public class MemorySpace {
 	 * @return the base address of the allocated block, or -1 if unable to allocate
 	 */
 	public int malloc(int length) {		
-		Node currentNode = freeList.getFirst();
-		ListIterator it = freeList.iterator();
-		while (it.hasNext())
+		ListIterator lt1 = freeList.iterator();
+		int address = -1;
+		int savedLength = -1;
+		int min = -1;
+		while (lt1.hasNext())
 		{
-			int currentLength = it.current.block.length;
-			if (currentLength >= length)
+			int nextLength = lt1.current.block.length;
+			if (nextLength >= length)
 			{
-				int baseAddress = it.current.block.baseAddress;
-				allocatedList.addLast(new MemoryBlock(baseAddress, length));
-				int ans = it.current.block.baseAddress;
-				it.current.block.baseAddress += length;
-				it.current.block.length -= length;
-				if (it.current.block.length == 0)
+				if(min == -1)
 				{
-					freeList.remove(it.current);
+					min = nextLength - length;
+					address = lt1.current.block.baseAddress;
+					savedLength = nextLength;
 				}
-				return ans;
+				else
+				{
+					if (min > nextLength - length){
+						min = nextLength - length;
+						address = lt1.current.block.baseAddress;
+						savedLength = nextLength;
+					}
+				}
 			}
-			it.next();
+			lt1.current = lt1.current.next;
 		}
-		return -1;
-	}
+		if (address != -1)
+		{
+			MemoryBlock newMB = new MemoryBlock(address, length);
+			MemoryBlock oldMB = new MemoryBlock(address, savedLength);
+			allocatedList.addLast(newMB);
+			int helpIndex = freeList.indexOf(oldMB);
+			freeList.remove(helpIndex);
+			MemoryBlock updated = new MemoryBlock(address + length , savedLength - length);
+			if (this.freeList.getSize() != 0 || savedLength - length != 0 )
+			{
+				freeList.add(helpIndex, updated);
+			}
+		}
+
+		return address;
+}
 
 	/**
 	 * Frees the memory block whose base address equals the given address.
@@ -90,26 +110,25 @@ public class MemorySpace {
 	 *            the starting address of the block to freeList
 	 */
 	public void free(int address) {
-		if(freeList.getSize() == 1 && freeList.getFirst().block.baseAddress == 0 && freeList.getFirst().block.length == 100) 
+		ListIterator lt1 = new ListIterator(allocatedList.getFirst());
+		if (allocatedList.getSize() == 0)
 		{
-			throw new IllegalArgumentException(
-					"index must be between 0 and size");
+			throw new IllegalArgumentException ("index must be between 0 and size");
 		}
-		ListIterator it = allocatedList.iterator();
-		boolean isFound = false;
-		while(it.hasNext() && !isFound) 
+		while (lt1.hasNext() && lt1.current.block.baseAddress != address)
 		{
-				if (it.current.block.baseAddress == address) 
-				{
-					allocatedList.remove(it.current.block);
-					freeList.addLast(it.current.block);
-					isFound = true;
-				}
-
-				it.next();
+			lt1.next();
+		}
+		if (lt1.current != null)
+		{
+			if (lt1.current.block.baseAddress == address)
+			{
+				MemoryBlock mb = new MemoryBlock (address, lt1.current.block.length);
+				allocatedList.remove(mb);
+				freeList.addLast(mb);
 			}
-	}
-	
+		}
+	}	
 	/**
 	 * A textual representation of the free list and the allocated list of this memory space, 
 	 * for debugging purposes.
@@ -124,51 +143,20 @@ public class MemorySpace {
 	 * In this implementation Malloc does not call defrag.
 	 */
 	public void defrag() {
-		if (freeList.getSize() <= 1) 
+		ListIterator mainLit = freeList.iterator();
+		ListIterator secondLit = freeList.iterator();
+		while (mainLit.hasNext())
 		{
-			return;
-		}
-		boolean combined = true;
-		while (combined) 
-		{
-			combined = false;
-			Node current = freeList.getFirst();
-			while (current != null) 
+			MemoryBlock mb = mainLit.next();
+			int sum = mb.baseAddress + mb.length;
+			while (secondLit.hasNext())
 			{
-				Node check = freeList.getFirst();
-				while (check != null) 
+				MemoryBlock mb2 = secondLit.next();
+				if (sum == mb2.baseAddress)
 				{
-					if (current != check) 
-					{ // Avoid comparing a block with itself
-						MemoryBlock currentBlock = current.block;
-						MemoryBlock checkBlock = check.block;
-	
-						if (currentBlock.baseAddress + currentBlock.length == checkBlock.baseAddress) 
-						{
-							currentBlock.length += checkBlock.length;
-							freeList.remove(check);
-							combined = true;
-							break;
-						} 
-						else if (checkBlock.baseAddress + checkBlock.length == currentBlock.baseAddress) 
-						{
-							checkBlock.length += currentBlock.length;
-							checkBlock.baseAddress = currentBlock.baseAddress;
-							freeList.remove(current);
-							combined = true;
-							break;
-						}
-					}
-					check = check.next;
-				}
-	
-				if (!combined) 
-				{
-					current = current.next;
-				} 
-				else 
-				{
-					break;
+					mb.length = mb.length + mb2.length;
+					freeList.remove(mb2);
+					defrag();
 				}
 			}
 		}
