@@ -118,17 +118,19 @@ public class LinkedList {
 	 */
 	public void addLast(MemoryBlock block) {
 		Node newNode = new Node(block);
-		if (last == null) 
-		{ 
+		if (first == null) 
+		{
 			first = newNode;
-			last = newNode;
 		} 
 		else 
 		{
-			last.next = newNode;
-			last = newNode;      
+			Node current = first;
+			while (current.next != null) 
+			{
+				current = current.next;
+			}
+			current.next = newNode;
 		}
-		size++;
 }
 	
 	/**
@@ -140,17 +142,8 @@ public class LinkedList {
 	 */
 	public void addFirst(MemoryBlock block) {
 		Node newNode = new Node(block);
-		if (size == 0) 
-		{  
-			first = newNode;
-			last = newNode;
-		} 
-		else 
-		{  
-			newNode.next = first;  
-			first = newNode;  
-		}
-		size++; 
+		newNode.next = first;
+		first = newNode;
 }
 
 	/**
@@ -278,7 +271,7 @@ public class LinkedList {
 	public void remove(MemoryBlock block) {
 		if (block == null) 
 		{
-			throw new IllegalArgumentException("ERROR IllegalArgumentException: index must be between 0 and size");
+			throw new IllegalArgumentException("ERROR IllegalArgumentException: block must not be null");
 		}
 		Node currentNode = first;
 		Node previousNode = null;
@@ -294,13 +287,12 @@ public class LinkedList {
 				{
 					previousNode.next = currentNode.next;
 				}
-				
-				return true; 
+				return; 
 			}
 			previousNode = currentNode;
 			currentNode = currentNode.next;
 		}
-		throw new IllegalArgumentException("ERROR IllegalArgumentException: index must be between 0 and size");
+		throw new IllegalArgumentException("ERROR: Block not found in the list");
 	}	
 
 	/**
