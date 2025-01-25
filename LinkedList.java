@@ -251,18 +251,13 @@ public class LinkedList {
 	 * A textual representation of this list, for debugging.
 	 */
 	public String toString() {
-		String result = "";  
-		Node currentNode = first;  
-		while (currentNode != null) 
-		{ 
-			result += currentNode.block;  
-			if (currentNode.next != null) 
-			{  
-				result += " -> "; 
-			}
-			currentNode = currentNode.next;  
+		String result = "";
+    	Node current = first;
+    	for(int i = 0 ; i < size ; i ++) 
+		{
+        	result += current.block.toString() + " "; 
+        	current = current.next; 
 		}
-	
-		return result;  
+    	return result;
 	}
 }
